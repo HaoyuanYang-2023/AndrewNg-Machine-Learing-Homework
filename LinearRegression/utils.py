@@ -34,12 +34,12 @@ class LinearRegression:
 
         t = np.ones(shape=(self.n, 1))
         # self.x (n, d+1)
-        self.std = y.std(axis=0)
-        self.mean = y.mean(axis=0)
-        x_norm = (x - x.mean(axis=0)) / x.std(axis=0)
+        # self.std = y.std(axis=0)
+        # self.mean = y.mean(axis=0)
+        # x_norm = (x - x.mean(axis=0)) / x.std(axis=0)
         y_norm = (y - y.mean(axis=0)) / y.std(axis=0)
         self.y = y
-        self.x = np.concatenate((t, x_norm), axis=1)
+        self.x = np.concatenate((t, x), axis=1)
 
     def init_theta(self):
         """
@@ -102,10 +102,10 @@ class LinearRegression:
         :return: 预测结果 (n,1)
         """
         # (d,1)
-        if x.shape[0] > 1:
-            std = x.std(axis=0)
-            mean = x.mean(axis=0)
-            x = (x - mean) / std
+        # if x.shape[0] > 1:
+            # std = x.std(axis=0)
+            # mean = x.mean(axis=0)
+            # x = (x - mean) / std
         t = np.ones(shape=(x.shape[0], 1))
         x = np.concatenate((t, x), axis=1)
         pred = np.matmul(self.theta, x.T)
