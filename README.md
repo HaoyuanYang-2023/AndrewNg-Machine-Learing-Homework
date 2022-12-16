@@ -5,3 +5,5 @@
 - 训练过程和结果可视化
 - 与Sklearn对比
 ## 2. Logistic Regression
+- 正则化和非正则化
+- 可视化决策边界
