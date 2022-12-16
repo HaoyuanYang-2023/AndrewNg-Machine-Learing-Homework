@@ -3,12 +3,25 @@ import numpy as np
 
 def square_loss(pred, target):
     """
-    计算损失
+    计算平方误差
     :param pred: 预测
     :param target: ground truth
     :return: 损失序列
     """
     return np.power((pred - target), 2)
+
+
+def compute_loss(pred, target):
+    """
+    计算归一化平均损失
+    :param pred: 预测
+    :param target: ground truth
+    :return: 损失
+    """
+    pred = (pred - pred.mean(axis=0)) / pred.std(axis=0)
+    target = (pred - target.mean(axis=0)) / target.std(axis=0)
+    loss = square_loss(pred, target)
+    return np.sum(loss) / (2 * pred.shape[0])
 
 
 class LinearRegression:
@@ -28,18 +41,22 @@ class LinearRegression:
         self.loss = []
         self.n = x.shape[0]
         self.d = x.shape[1]
-        # self.y (n,1)
+
         self.epoch = epoch
         self.lr = lr
 
         t = np.ones(shape=(self.n, 1))
-        # self.x (n, d+1)
-        # self.std = y.std(axis=0)
-        # self.mean = y.mean(axis=0)
-        # x_norm = (x - x.mean(axis=0)) / x.std(axis=0)
-        y_norm = (y - y.mean(axis=0)) / y.std(axis=0)
-        self.y = y
-        self.x = np.concatenate((t, x), axis=1)
+
+        self.x_std = x.std(axis=0)
+        self.x_mean = x.mean(axis=0)
+        self.y_mean = y.mean(axis=0)
+        self.y_std = y.std(axis=0)
+
+        x_norm = (x - self.x_mean) / self.x_std
+        y_norm = (y - self.y_mean) / self.y_std
+
+        self.y = y_norm
+        self.x = np.concatenate((t, x_norm), axis=1)
 
     def init_theta(self):
         """
@@ -75,7 +92,7 @@ class LinearRegression:
         # update parameters
         self.theta = self.theta - (self.lr / self.n) * term
 
-    def run(self):
+    def train(self):
         """
         训练线性回归
         :return: 参数矩阵theta (1,d+1); 损失序列 loss
@@ -92,22 +109,20 @@ class LinearRegression:
             self.gradient_decent(pred)
 
             print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
-        # self.theta = self.theta * self.std.T + self.mean.T
+
+        # un_scaling parameters
+        self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T * self.y_std[0]
+        self.theta[0, 0] = self.theta[0, 0] * self.y_std[0] + self.y_mean[0] - np.dot(self.theta[0, 1:], self.x_mean.T)
         return self.theta, self.loss
 
-    def prediction(self, x):
+    def predict(self, x):
         """
         回归预测
         :param x: 输入样本 (n,d)
         :return: 预测结果 (n,1)
         """
         # (d,1)
-        # if x.shape[0] > 1:
-            # std = x.std(axis=0)
-            # mean = x.mean(axis=0)
-            # x = (x - mean) / std
         t = np.ones(shape=(x.shape[0], 1))
         x = np.concatenate((t, x), axis=1)
         pred = np.matmul(self.theta, x.T)
         return pred.T
-        # return pred.T * self.std + self.mean

@@ -1,8 +1,11 @@
 import numpy as np
 
-from LinearRegression.utils import LinearRegression
-train_x_ex = np.zeros([77,1])
-train_y_ex = np.ones([77,1])
-linear_reg = LinearRegression(train_x_ex,train_y_ex)
-t,l=linear_reg.run()
-print(t)
+a = np.array([[0, 1],
+              [1, 4],
+              [2, 7],
+              [3, 10]])
+print(a.mean(axis=0))
+print(a.std(axis=0))
+a = (a - a.mean(axis=0)) / a.std()
+print(a)
+print(a[0,0] * 3 + 1)
