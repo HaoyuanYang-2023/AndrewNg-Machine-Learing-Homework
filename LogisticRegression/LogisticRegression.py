@@ -20,7 +20,7 @@ class LogisticRegression:
     Logistic回归类
     """
 
-    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1):
+    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1, normalize=True, regularize=None, scale=0):
         """
         初始化
         :param x: 样本, (sample_number, dimension)
@@ -39,19 +39,24 @@ class LogisticRegression:
 
         t = np.ones(shape=(self.n, 1))
 
-        self.x_std = x.std(axis=0)
-        self.x_mean = x.mean(axis=0)
-        self.y_mean = y.mean(axis=0)
-        self.y_std = y.std(axis=0)
+        self.normalize = normalize
 
-        x_norm = (x - self.x_mean) / self.x_std
+        if self.normalize:
+            self.x_std = x.std(axis=0)
+            self.x_mean = x.mean(axis=0)
+            self.y_mean = y.mean(axis=0)
+            self.y_std = y.std(axis=0)
+            x = (x - self.x_mean) / self.x_std
 
         self.y = y
-        self.x = np.concatenate((t, x_norm), axis=1)
+        self.x = np.concatenate((t, x), axis=1)
 
         # self.val_x = (val_x - val_x.mean(axis=0)) / val_x.std(axis=0)
         self.val_x = val_x
         self.val_y = val_y
+
+        self.regularize = regularize
+        self.scale = scale
 
     def init_theta(self):
         """
@@ -82,13 +87,21 @@ class LogisticRegression:
         temp = np.zeros_like(self.theta)
         # term (d+1,d+1); error (d+1, n); self.x (n, d+1)
         term = np.matmul(error, self.x)
-        # term (1,d+1)
-        term = term.diagonal().T
+        # term (d+1,)
+        term = np.expand_dims(term.diagonal().copy().T, axis=0)
+
+        if self.regularize == "L2":
+            re = self.scale / self.n * self.theta[0, 1:]
+            re = np.expand_dims(np.array(re), axis=0)
+            re = np.concatenate((np.array([[0]]), re), axis=1)
+            # re [0,...] (1,d+1)
+            self.theta = self.theta - self.lr * (term / self.n + re)
         # update parameters
-        self.theta = self.theta - (self.lr / self.n) * term
+        else:
+            self.theta = self.theta - self.lr * (term / self.n)
 
     def validation(self, x, y):
-        x = (x-x.mean(axis=0))/x.std(axis=0)
+        x = (x - x.mean(axis=0)) / x.std(axis=0)
         outputs = self.get_prob(x)
         self.val_loss.append(bce_loss(outputs, y))
         predicted = np.expand_dims(np.where(outputs[:, 0] > 0.5, 1, 0), axis=1)
@@ -115,15 +128,18 @@ class LogisticRegression:
             # pred (n,1)
             pred = sigmoid(z)
             curr_loss = self.get_loss(pred, self.y)
+            if self.regularize == "L2":
+                curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
 
             self.gradient_decent(pred)
 
             print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
             self.validation(self.val_x, self.val_y)
-        y_mean = np.mean(z, axis=0)
 
-        self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T
-        self.theta[0, 0] = y_mean - np.dot(self.theta[0, 1:], self.x_mean.T)
+        if self.normalize:
+            y_mean = np.mean(z, axis=0)
+            self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T
+            self.theta[0, 0] = y_mean - np.dot(self.theta[0, 1:], self.x_mean.T)
         return self.theta, self.loss, self.val_loss
 
     def get_prob(self, x):
@@ -138,6 +154,11 @@ class LogisticRegression:
         x = np.concatenate((t, x), axis=1)
         pred = sigmoid(np.matmul(self.theta, x.T))
         return pred.T
+
+    def get_inner_product(self, x):
+        t = np.ones(shape=(x.shape[0], 1))
+        x = np.concatenate((t, x), axis=1)
+        return np.matmul(self.theta, x.T)
 
     def predict(self, x):
         prob = self.get_prob(x)
