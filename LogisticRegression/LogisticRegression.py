@@ -65,16 +65,6 @@ class LogisticRegression:
         """
         self.theta = np.zeros(shape=(1, self.d + 1))
 
-    def get_loss(self, pred, target):
-        """
-        计算损失
-        :param pred: 预测 (n,1)
-        :param target: ground truth
-        """
-        loss = bce_loss(pred, target)
-        self.loss.append(loss)
-        return loss
-
     def gradient_decent(self, pred):
         """
         实现梯度下降求解
@@ -103,7 +93,10 @@ class LogisticRegression:
     def validation(self, x, y):
         x = (x - x.mean(axis=0)) / x.std(axis=0)
         outputs = self.get_prob(x)
-        self.val_loss.append(bce_loss(outputs, y))
+        curr_loss = bce_loss(outputs, y)
+        if self.regularize == "L2":
+            curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
+        self.val_loss.append(curr_loss)
         predicted = np.expand_dims(np.where(outputs[:, 0] > 0.5, 1, 0), axis=1)
         count = np.sum(predicted == y)
         print("Accuracy on Val set: {:.2f}%".format(count / y.shape[0] * 100))
@@ -113,7 +106,10 @@ class LogisticRegression:
         predicted = np.expand_dims(np.where(outputs[:, 0] > 0.5, 1, 0), axis=1)
         count = np.sum(predicted == y)
         # print("Accuracy on Test set: {:.2f}%".format(count / y.shape[0] * 100))
-        return count / y.shape[0], bce_loss(outputs, y)
+        # curr_loss = bce_loss(outputs, y)
+        # if self.regularize == "L2":
+            # curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
+        return count / y.shape[0]# , curr_loss
 
     def train(self):
         """
@@ -127,10 +123,10 @@ class LogisticRegression:
             z = np.matmul(self.theta, self.x.T).T
             # pred (n,1)
             pred = sigmoid(z)
-            curr_loss = self.get_loss(pred, self.y)
+            curr_loss = bce_loss(pred, self.y)
             if self.regularize == "L2":
                 curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
-
+            self.loss.append(curr_loss)
             self.gradient_decent(pred)
 
             print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
@@ -148,8 +144,6 @@ class LogisticRegression:
         :param x: 输入样本 (n,d)
         :return: 预测结果 (n,1)
         """
-        # (d,1)
-        # x = (x - x.mean(axis=0)) / x.std(axis=0)
         t = np.ones(shape=(x.shape[0], 1))
         x = np.concatenate((t, x), axis=1)
         pred = sigmoid(np.matmul(self.theta, x.T))
