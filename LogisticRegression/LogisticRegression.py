@@ -20,7 +20,7 @@ class LogisticRegression:
     Logistic回归类
     """
 
-    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1, normalize=True, regularize=None, scale=0):
+    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1, normalize=True, regularize=None, scale=0, show=True):
         """
         初始化
         :param x: 样本, (sample_number, dimension)
@@ -58,6 +58,8 @@ class LogisticRegression:
         self.regularize = regularize
         self.scale = scale
 
+        self.show = show
+
     def init_theta(self):
         """
         初始化参数
@@ -87,7 +89,8 @@ class LogisticRegression:
             self.theta = self.theta - self.lr * (term / self.n)
 
     def validation(self, x, y):
-        x = (x - x.mean(axis=0)) / x.std(axis=0)
+        if self.normalize:
+            x = (x - x.mean(axis=0)) / x.std(axis=0)
         outputs = self.get_prob(x)
         curr_loss = bce_loss(outputs, y)
         if self.regularize == "L2":
@@ -95,7 +98,8 @@ class LogisticRegression:
         self.val_loss.append(curr_loss)
         predicted = np.expand_dims(np.where(outputs[:, 0] > 0.5, 1, 0), axis=1)
         count = np.sum(predicted == y)
-        print("Accuracy on Val set: {:.2f}%\tLoss on Val set: {:.4f}".format(count / y.shape[0] * 100, curr_loss))
+        if self.show:
+            print("Accuracy on Val set: {:.2f}%\tLoss on Val set: {:.4f}".format(count / y.shape[0] * 100, curr_loss))
 
     def test(self, x, y):
         outputs = self.get_prob(x)
@@ -104,8 +108,8 @@ class LogisticRegression:
         # print("Accuracy on Test set: {:.2f}%".format(count / y.shape[0] * 100))
         # curr_loss = bce_loss(outputs, y)
         # if self.regularize == "L2":
-            # curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
-        return count / y.shape[0]# , curr_loss
+        # curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
+        return count / y.shape[0]  # , curr_loss
 
     def train(self):
         """
@@ -124,8 +128,8 @@ class LogisticRegression:
                 curr_loss += self.scale / self.n * np.sum(self.theta[0, 1:] ** 2)
             self.loss.append(curr_loss)
             self.gradient_decent(pred)
-
-            print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
+            if self.show:
+                print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
             self.validation(self.val_x, self.val_y)
 
         if self.normalize:
