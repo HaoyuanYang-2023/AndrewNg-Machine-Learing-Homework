@@ -71,14 +71,10 @@ class LogisticRegression:
         """
         # error (n,1)
         error = pred - self.y
-        # error (d+1,n)
-        error = error.T.repeat(repeats=self.d + 1, axis=0)
-        # temp (1, d+1)
-        temp = np.zeros_like(self.theta)
-        # term (d+1,d+1); error (d+1, n); self.x (n, d+1)
-        term = np.matmul(error, self.x)
-        # term (d+1,)
-        term = np.expand_dims(term.diagonal().copy().T, axis=0)
+        # term (d+1, 1)
+        term = np.matmul(self.x.T, error)
+        # term (1,d+1)
+        term = term.T
 
         if self.regularize == "L2":
             re = self.scale / self.n * self.theta[0, 1:]
@@ -99,7 +95,7 @@ class LogisticRegression:
         self.val_loss.append(curr_loss)
         predicted = np.expand_dims(np.where(outputs[:, 0] > 0.5, 1, 0), axis=1)
         count = np.sum(predicted == y)
-        print("Accuracy on Val set: {:.2f}%".format(count / y.shape[0] * 100))
+        print("Accuracy on Val set: {:.2f}%\tLoss on Val set: {:.4f}".format(count / y.shape[0] * 100, curr_loss))
 
     def test(self, x, y):
         outputs = self.get_prob(x)

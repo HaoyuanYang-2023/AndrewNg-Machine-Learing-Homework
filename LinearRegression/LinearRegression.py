@@ -8,7 +8,7 @@ def square_loss(pred, target):
     :param target: ground truth
     :return: 损失序列
     """
-    return np.power((pred - target), 2)
+    return np.sum(np.power((pred - target), 2))
 
 
 def compute_loss(pred, target):
@@ -29,7 +29,7 @@ class LinearRegression:
     线性回归类
     """
 
-    def __init__(self, x, y, epoch=100, lr=0.1):
+    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1):
         """
         初始化
         :param x: 样本, (sample_number, dimension)
@@ -39,6 +39,7 @@ class LinearRegression:
         """
         self.theta = None
         self.loss = []
+        self.val_loss = []
         self.n = x.shape[0]
         self.d = x.shape[1]
 
@@ -58,6 +59,9 @@ class LinearRegression:
         self.y = y_norm
         self.x = np.concatenate((t, x_norm), axis=1)
 
+        self.val_x = val_x
+        self.val_y = val_y
+
     def init_theta(self):
         """
         初始化参数
@@ -65,15 +69,13 @@ class LinearRegression:
         """
         self.theta = np.zeros(shape=(1, self.d + 1))
 
-    def get_loss(self, pred, target):
-        """
-        计算损失
-        :param pred: 预测 (n,1)
-        :param target: ground truth
-        """
-        inner = square_loss(pred, target)
-        self.loss.append(np.sum(inner) / (2 * self.n))
-        return np.sum(inner) / (2 * self.n)
+    def validation(self, x, y):
+        x = (x - x.mean(axis=0)) / x.std(axis=0)
+        y = (y - y.mean(axis=0)) / y.std(axis=0)
+        outputs = self.predict(x)
+        curr_loss = square_loss(outputs, y) / (2 * y.shape[0])
+        self.val_loss.append(curr_loss)
+        print("Loss on Val set: {:.4f}".format(curr_loss))
 
     def gradient_decent(self, pred):
         """
@@ -81,14 +83,10 @@ class LinearRegression:
         """
         # error (n,1)
         error = pred - self.y
-        # error (d+1,n)
-        error = error.T.repeat(repeats=self.d + 1, axis=0)
-        # temp (1, d+1)
-        temp = np.zeros_like(self.theta)
-        # term (d+1,d+1); error (d+1, n); self.x (n, d+1)
-        term = np.matmul(error, self.x)
+        # term (d+1, 1)
+        term = np.matmul(self.x.T, error)
         # term (1,d+1)
-        term = term.diagonal().T
+        term = term.T
         # update parameters
         self.theta = self.theta - (self.lr / self.n) * term
 
@@ -104,16 +102,17 @@ class LinearRegression:
             pred = np.matmul(self.theta, self.x.T)
             # pred (n,1)
             pred = pred.T
-            curr_loss = self.get_loss(pred, self.y)
+            curr_loss = square_loss(pred, self.y) / (2 * self.n)
+            self.loss.append(curr_loss)
 
             self.gradient_decent(pred)
 
             print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
-
+            self.validation(self.val_x, self.val_y)
         # un_scaling parameters
         self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T * self.y_std[0]
         self.theta[0, 0] = self.theta[0, 0] * self.y_std[0] + self.y_mean[0] - np.dot(self.theta[0, 1:], self.x_mean.T)
-        return self.theta, self.loss
+        return self.theta, self.loss, self.val_loss
 
     def predict(self, x):
         """
