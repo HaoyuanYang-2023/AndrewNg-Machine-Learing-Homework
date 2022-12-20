@@ -29,13 +29,14 @@ class LinearRegression:
     线性回归类
     """
 
-    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1):
+    def __init__(self, x, y, val_x, val_y, epoch=100, lr=0.1, regularize=False, scale=0):
         """
         初始化
         :param x: 样本, (sample_number, dimension)
         :param y: 标签, (sample_numer, 1)
         :param epoch: 训练迭代次数
         :param lr: 学习率
+        :param regularize: Regularize or not
         """
         self.theta = None
         self.loss = []
@@ -62,6 +63,9 @@ class LinearRegression:
         self.val_x = val_x
         self.val_y = val_y
 
+        self.regularize = regularize
+        self.scale = scale
+
     def init_theta(self):
         """
         初始化参数
@@ -74,8 +78,7 @@ class LinearRegression:
         y = (y - y.mean(axis=0)) / y.std(axis=0)
         outputs = self.predict(x)
         curr_loss = square_loss(outputs, y) / (2 * y.shape[0])
-        self.val_loss.append(curr_loss)
-        print("Loss on Val set: {:.4f}".format(curr_loss))
+        return curr_loss
 
     def gradient_decent(self, pred):
         """
@@ -84,11 +87,16 @@ class LinearRegression:
         # error (n,1)
         error = pred - self.y
         # term (d+1, 1)
-        term = np.matmul(self.x.T, error)
+        gradient = np.matmul(self.x.T, error)
         # term (1,d+1)
-        term = term.T
+        gradient = gradient.T / pred.shape[0]
+        if self.regularize:
+            # reg_term (1, d+1)
+            reg_term = self.scale / self.n * self.theta[:, 1:]
+            reg_term[:, 0] = 0
+            gradient = gradient + reg_term
         # update parameters
-        self.theta = self.theta - (self.lr / self.n) * term
+        self.theta = self.theta - (self.lr / self.n) * gradient
 
     def train(self):
         """
@@ -103,12 +111,15 @@ class LinearRegression:
             # pred (n,1)
             pred = pred.T
             curr_loss = square_loss(pred, self.y) / (2 * self.n)
-            self.loss.append(curr_loss)
-
+            val_loss = self.validation(self.val_x, self.val_y)
             self.gradient_decent(pred)
+            # if self.regularize:
+                # curr_loss = curr_loss + (self.scale / (2 * self.n)) * np.power(self.theta[:, 1:], 2).sum()
+                # val_loss = val_loss + (self.scale / (2 * self.n)) * np.power(self.theta[:, 1:], 2).sum()
+            self.val_loss.append(val_loss)
+            self.loss.append(curr_loss)
+            print("Epoch: {}/{}\tTrain Loss: {:.4f}\tVal loss: {:.4f}".format(i + 1, self.epoch, curr_loss, val_loss))
 
-            print("Epoch: {}/{}, Train Loss: {:.4f}".format(i + 1, self.epoch, curr_loss))
-            self.validation(self.val_x, self.val_y)
         # un_scaling parameters
         self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T * self.y_std[0]
         self.theta[0, 0] = self.theta[0, 0] * self.y_std[0] + self.y_mean[0] - np.dot(self.theta[0, 1:], self.x_mean.T)
