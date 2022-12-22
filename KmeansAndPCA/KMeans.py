@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 def visual_result(label_pred, x, centroids, fig_size, fig_dpi):
     """
-    Visualization of clustering result
+    Visualization of clustering result (2-dimension sample)
     :param label_pred: (n, )
     :param x:
     :param centroids:
@@ -53,7 +53,6 @@ class KMeans:
         The distance between each sample and each centroid.
     centroids: ndarray with shape od (n_clusters, n_features)
     """
-
     def __init__(self, k, max_iter=1000):
         self.k = k
         self.max_iter = max_iter
@@ -116,7 +115,7 @@ class KMeans:
 
     def fit(self, x):
         """
-
+        Fit the data
         :param x: ndarray (n,d)
         :return:
         """
