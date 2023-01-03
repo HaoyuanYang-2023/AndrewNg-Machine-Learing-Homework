@@ -12,7 +12,7 @@ def bce_loss(pred, target):
     :param target: ground truth
     :return: 损失序列
     """
-    return np.mean(-target * np.log(pred))
+    return -np.mean(target * np.log(pred) + (1-target) * np.log(1-pred))
 
 
 class LogisticRegression:

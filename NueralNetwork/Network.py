@@ -1,6 +1,7 @@
 import numpy as np
 from LogisticRegression.LogisticRegression import sigmoid
-
+import torch
+import torch.nn as nn
 
 def onehot_encode(label):
     """
@@ -40,4 +41,14 @@ class ForwardModel:
         return a3
 
 
+class PytorchForward(nn.Module):
+    def __init__(self):
+        super(PytorchForward, self).__init__()
+        self.layer1 = nn.Linear(in_features=400, out_features=25)
+        self.layer2 = nn.Linear(in_features=25, out_features=10)
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        return x
 

@@ -86,9 +86,9 @@ class LinearRegression:
         """
         # error (n,1)
         error = pred - self.y
-        # term (d+1, 1)
+        # gradient (d+1, 1)
         gradient = np.matmul(self.x.T, error)
-        # term (1,d+1)
+        # gradient (1,d+1)
         gradient = gradient.T / pred.shape[0]
         if self.regularize:
             # reg_term (1, d+1)
@@ -122,7 +122,7 @@ class LinearRegression:
 
         # un_scaling parameters
         self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T * self.y_std[0]
-        self.theta[0, 0] = self.theta[0, 0] * self.y_std[0] + self.y_mean[0] - np.dot(self.theta[0, 1:], self.x_mean.T)
+        self.theta[0, 0] = self.theta[0, 0] * self.y_std[0] + self.y_mean[0] - np.dot(self.theta[0, 1:], self.x_mean)
         return self.theta, self.loss, self.val_loss
 
     def predict(self, x):
