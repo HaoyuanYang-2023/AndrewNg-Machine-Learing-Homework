@@ -8,20 +8,7 @@ def square_loss(pred, target):
     :param target: ground truth
     :return: 损失序列
     """
-    return np.sum(np.power((pred - target), 2))
-
-
-def compute_loss(pred, target):
-    """
-    计算归一化平均损失
-    :param pred: 预测
-    :param target: ground truth
-    :return: 损失
-    """
-    pred = (pred - pred.mean(axis=0)) / pred.std(axis=0)
-    target = (pred - target.mean(axis=0)) / target.std(axis=0)
-    loss = square_loss(pred, target)
-    return np.sum(loss) / (2 * pred.shape[0])
+    return np.sum(np.power((pred - target), 2)) / (2 * pred.shape[0])
 
 
 class LinearRegression:
@@ -55,9 +42,8 @@ class LinearRegression:
         self.y_std = y.std(axis=0)
 
         x_norm = (x - self.x_mean) / self.x_std
-        y_norm = (y - self.y_mean) / self.y_std
 
-        self.y = y_norm
+        self.y = y
         self.x = np.concatenate((t, x_norm), axis=1)
 
         self.val_x = val_x
@@ -75,9 +61,9 @@ class LinearRegression:
 
     def validation(self, x, y):
         x = (x - x.mean(axis=0)) / x.std(axis=0)
-        y = (y - y.mean(axis=0)) / y.std(axis=0)
+        # y = (y - y.mean(axis=0)) / y.std(axis=0)
         outputs = self.predict(x)
-        curr_loss = square_loss(outputs, y) / (2 * y.shape[0])
+        curr_loss = square_loss(outputs, y)
         return curr_loss
 
     def gradient_decent(self, pred):
@@ -110,19 +96,19 @@ class LinearRegression:
             pred = np.matmul(self.theta, self.x.T)
             # pred (n,1)
             pred = pred.T
-            curr_loss = square_loss(pred, self.y) / (2 * self.n)
+            curr_loss = square_loss(pred, self.y)
             val_loss = self.validation(self.val_x, self.val_y)
             self.gradient_decent(pred)
-            # if self.regularize:
-                # curr_loss = curr_loss + (self.scale / (2 * self.n)) * np.power(self.theta[:, 1:], 2).sum()
-                # val_loss = val_loss + (self.scale / (2 * self.n)) * np.power(self.theta[:, 1:], 2).sum()
+            if self.regularize:
+                curr_loss = curr_loss + (self.scale / (2 * self.n)) * np.power(self.theta[:, 1:], 2).sum()
+                val_loss = val_loss + (self.scale / (2 * self.n)) * np.power(self.theta[:, 1:], 2).sum()
             self.val_loss.append(val_loss)
             self.loss.append(curr_loss)
             print("Epoch: {}/{}\tTrain Loss: {:.4f}\tVal loss: {:.4f}".format(i + 1, self.epoch, curr_loss, val_loss))
 
         # un_scaling parameters
-        self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T * self.y_std[0]
-        self.theta[0, 0] = self.theta[0, 0] * self.y_std[0] + self.y_mean[0] - np.dot(self.theta[0, 1:], self.x_mean)
+        self.theta[0, 1:] = self.theta[0, 1:] / self.x_std.T
+        self.theta[0, 0] = self.theta[0, 0] - np.dot(self.theta[0, 1:], self.x_mean)
         return self.theta, self.loss, self.val_loss
 
     def predict(self, x):

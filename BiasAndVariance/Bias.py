@@ -2,16 +2,37 @@ import numpy as np
 
 
 def loss(pred, target):
+    """
+    MSE Loss
+    :param pred: ndarray, (n_sample, n_feature), prediction
+    :param target: ndarray, (n_sample, n_feature), target
+    :return:
+    """
     return np.sum(np.power((pred - target), 2)) / (2 * pred.shape[0])
 
 
 def reg_loss(pred, target, theta, scale):
-    reg_term = theta  # (1, 2)
+    """
+    Regularized Loss (L2 regularize)
+    :param pred:
+    :param target:
+    :param theta: parameters
+    :param scale: lambda for regularize
+    :return:
+    """
+    reg_term = theta.copy()  # (1, 2)
     reg_term[:, 0] = 0
     return loss(pred, target) + scale / (2 * pred.shape[0]) * reg_term.sum()
 
 
 def gradient(x, pred, target):
+    """
+    Get gradient for model
+    :param x:
+    :param pred:
+    :param target:
+    :return:
+    """
     # x(n,2)
     t = np.ones(shape=(x.shape[0], 1))
     x = np.concatenate((t, x), axis=1)
@@ -22,6 +43,15 @@ def gradient(x, pred, target):
 
 
 def reg_gradient(x, pred, target, theta, scale):
+    """
+    Regularized gradient
+    :param x:
+    :param pred:
+    :param target:
+    :param theta:
+    :param scale:
+    :return:
+    """
     g = gradient(x, pred, target)
     reg_term = theta.copy()
     reg_term[:, 0] = 0
@@ -34,6 +64,7 @@ class LinearRegression:
 
     def init_theta(self, shape):
         self.theta = np.zeros(shape)
+        # self.theta = np.ones(shape)
 
     def optimize(self, g, lr):
         self.theta = self.theta - lr * g

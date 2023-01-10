@@ -12,7 +12,7 @@ def get_cross_entropy_loss_append_item_fig():
     k4 = a(x, 4)
     k5 = a(x, 5)
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-    ax.plot(x, -np.log(x), label="x", linestyle='--')
+    ax.plot(x, -np.log(x), label="-log(x)", linestyle='--')
     ax.plot(x, k3, color="red", label="k=3")
     ax.plot(x, k4, color="blue", label="k=4")
     ax.plot(x, k5, color="black", label="k=5")
